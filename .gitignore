@@ -1,0 +1,10 @@
+node_modules/
+dist/
+out/
+*.aax
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.env
+.env.local
+release/
