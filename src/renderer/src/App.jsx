@@ -14,6 +14,12 @@ const TABS = [
   { id: 'settings', label: 'Settings' }
 ]
 
+if (!window.api) {
+  document.body.innerHTML =
+    '<div style="color:#f87171;font-family:monospace;padding:2rem">window.api not found — preload script failed to load. Check Electron preload path.</div>'
+  throw new Error('window.api is undefined — preload bridge missing')
+}
+
 export default function App() {
   const [tab, setTab] = useState('convert')
   const [selectedFile, setSelectedFile] = useState(null)
