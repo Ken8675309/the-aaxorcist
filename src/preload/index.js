@@ -21,26 +21,21 @@ contextBridge.exposeInMainWorld('api', {
   convertStart: (opts) => invoke('convert:start', opts),
   convertCancel: (convId) => invoke('convert:cancel', convId),
   onConvertProgress: (cb) => on('convert:progress', cb),
-  onConvertDone: (cb) => on('convert:done', cb),
-  onConvertStatus: (cb) => on('convert:status', cb),
+  onConvertStep: (cb) => on('convert:step', cb),
+
+  // Activation
+  activationChecksum: (filePath) => invoke('activation:checksum', filePath),
+  activationStatus: () => invoke('activation:status'),
+
+  // Shell
+  shellOpenFile: (filePath) => invoke('shell:open-file', filePath),
+  shellOpenFolder: (filePath) => invoke('shell:open-folder', filePath),
 
   // Files
   filesTree: (dir) => invoke('files:tree', dir),
   filesPickFolder: () => invoke('files:pick-folder'),
   filesPickFile: () => invoke('files:pick-file'),
   filesPickOutput: () => invoke('files:pick-output'),
-
-  // Auth (multi-step Audible login)
-  authStart: (payload) => invoke('auth:start', payload),
-  authRespond: (sessionId, code) => invoke('auth:respond', { sessionId, code }),
-  authCancel: (sessionId) => invoke('auth:cancel', sessionId),
-  onAuthEvent: (cb) => on('auth:event', cb),
-
-  // Accounts
-  accountsList: () => invoke('accounts:list'),
-  accountsActive: () => invoke('accounts:active'),
-  accountsSwitch: (id) => invoke('accounts:switch', id),
-  accountsRemove: (id) => invoke('accounts:remove', id),
 
   // Keys
   keysList: () => invoke('keys:list'),

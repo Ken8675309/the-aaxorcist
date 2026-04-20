@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import AddAccountModal from './AddAccountModal'
 
-export default function SettingsTab({ accounts, activeAccount, onRefresh }) {
+export default function SettingsTab() {
   const [tools, setTools] = useState({})
   const [settings, setSettings] = useState({})
   const [saved, setSaved] = useState({})
-  const [showAdd, setShowAdd] = useState(false)
   const [appInfo, setAppInfo] = useState(null)
 
   const refresh = useCallback(async () => {
@@ -28,64 +26,9 @@ export default function SettingsTab({ accounts, activeAccount, onRefresh }) {
     setTimeout(() => setSaved((prev) => ({ ...prev, [key]: false })), 1500)
   }
 
-  const switchTo = async (id) => {
-    await window.api.accountsSwitch(id)
-    onRefresh()
-  }
-
-  const signOut = async (id) => {
-    if (!confirm('Remove this account?')) return
-    await window.api.accountsRemove(id)
-    onRefresh()
-  }
-
   return (
     <div className="p-6 max-w-2xl space-y-8">
       <h2 className="text-lg font-semibold text-slate-200">Settings</h2>
-
-      {/* Accounts */}
-      <section>
-        <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-3">Accounts</h3>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden mb-2">
-          {accounts.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-slate-500">No accounts connected.</p>
-          ) : (
-            accounts.map((acc) => (
-              <div key={acc.id} className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 last:border-b-0">
-                <div className="flex items-center gap-3">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${acc.is_active ? 'bg-green-400' : 'bg-slate-600'}`} />
-                  <div>
-                    <p className="text-sm text-slate-300">{acc.label}</p>
-                    <p className="text-xs text-slate-500">{acc.email}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {!acc.is_active && (
-                    <button
-                      onClick={() => switchTo(acc.id)}
-                      className="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300"
-                    >
-                      Switch
-                    </button>
-                  )}
-                  <button
-                    onClick={() => signOut(acc.id)}
-                    className="text-xs px-2 py-1 rounded hover:bg-red-900/40 text-slate-500 hover:text-red-400"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="text-sm text-brand-400 hover:text-brand-300 px-1"
-        >
-          + Add account…
-        </button>
-      </section>
 
       {/* Defaults */}
       <section>
@@ -134,8 +77,8 @@ export default function SettingsTab({ accounts, activeAccount, onRefresh }) {
 
       {/* Tool paths */}
       <section>
-        <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-3">Tool Paths</h3>
-        <div className="space-y-3">
+        <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-3">Tools</h3>
+        <div className="space-y-4">
           <ToolPathRow
             label="ffmpeg"
             detected={tools.ffmpeg}
@@ -143,27 +86,24 @@ export default function SettingsTab({ accounts, activeAccount, onRefresh }) {
             onChange={(v) => set('ffmpegPath', v)}
             saved={saved.ffmpegPath}
           />
+
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <label className="text-xs text-slate-400">audible (Python library)</label>
-              {tools.audibleLib ? (
-                <span className="text-xs text-green-400">✓ Installed</span>
+              <label className="text-xs text-slate-400">rcrack</label>
+              {tools.rcrack ? (
+                <span className="text-xs text-green-400">✓ {tools.rcrack}</span>
               ) : (
-                <span className="text-xs text-amber-400">Not installed — run: pip3 install audible --break-system-packages</span>
+                <span className="text-xs text-red-400">Not found in resources/tables/</span>
               )}
             </div>
+            {tools.tablesDir && (
+              <p className="text-xs text-slate-600 font-mono">{tools.tablesDir}</p>
+            )}
           </div>
-          <ToolPathRow
-            label="python3"
-            detected={tools.python}
-            value={settings.pythonPath || ''}
-            onChange={(v) => set('pythonPath', v)}
-            saved={saved.pythonPath}
-          />
         </div>
         <button
           onClick={refresh}
-          className="mt-2 text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded hover:bg-slate-800"
+          className="mt-3 text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded hover:bg-slate-800"
         >
           Re-detect tools
         </button>
@@ -179,13 +119,6 @@ export default function SettingsTab({ accounts, activeAccount, onRefresh }) {
             <Row label="Data folder" value={appInfo.userData} mono />
           </div>
         </section>
-      )}
-
-      {showAdd && (
-        <AddAccountModal
-          onClose={() => setShowAdd(false)}
-          onAdded={() => { onRefresh(); setShowAdd(false) }}
-        />
       )}
     </div>
   )

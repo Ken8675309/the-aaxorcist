@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import FileBrowser from './components/FileBrowser'
 import ConvertTab from './components/ConvertTab'
 import KeysTab from './components/KeysTab'
 import HistoryTab from './components/HistoryTab'
 import SettingsTab from './components/SettingsTab'
-import AccountPill from './components/AccountPill'
 import FfmpegBanner from './components/FfmpegBanner'
 
 const TABS = [
@@ -24,22 +23,10 @@ export default function App() {
   const [tab, setTab] = useState('convert')
   const [selectedFile, setSelectedFile] = useState(null)
   const [ffmpegOk, setFfmpegOk] = useState(null)
-  const [accounts, setAccounts] = useState([])
-  const [activeAccount, setActiveAccount] = useState(null)
-
-  const refreshAccounts = useCallback(async () => {
-    const [list, active] = await Promise.all([
-      window.api.accountsList(),
-      window.api.accountsActive()
-    ])
-    setAccounts(list)
-    setActiveAccount(active)
-  }, [])
 
   useEffect(() => {
     window.api.ffmpegDetect().then((r) => setFfmpegOk(r.found))
-    refreshAccounts()
-  }, [refreshAccounts])
+  }, [])
 
   return (
     <div className="flex flex-col h-screen">
@@ -64,13 +51,7 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="no-drag">
-          <AccountPill
-            accounts={accounts}
-            activeAccount={activeAccount}
-            onRefresh={refreshAccounts}
-          />
-        </div>
+        <div className="w-24" />
       </header>
 
       {ffmpegOk === false && (
@@ -81,18 +62,10 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
         <FileBrowser selectedFile={selectedFile} onSelect={setSelectedFile} />
         <main className="flex-1 overflow-auto">
-          {tab === 'convert' && (
-            <ConvertTab
-              selectedFile={selectedFile}
-              activeAccount={activeAccount}
-              accounts={accounts}
-            />
-          )}
-          {tab === 'keys' && <KeysTab accounts={accounts} />}
+          {tab === 'convert' && <ConvertTab selectedFile={selectedFile} />}
+          {tab === 'keys' && <KeysTab />}
           {tab === 'history' && <HistoryTab />}
-          {tab === 'settings' && (
-            <SettingsTab accounts={accounts} activeAccount={activeAccount} onRefresh={refreshAccounts} />
-          )}
+          {tab === 'settings' && <SettingsTab />}
         </main>
       </div>
     </div>

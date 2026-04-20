@@ -27,7 +27,6 @@ export default function HistoryTab() {
               <tr className="border-b border-slate-700 text-left text-xs text-slate-500 uppercase tracking-wide">
                 <th className="px-4 py-2">File</th>
                 <th className="px-4 py-2">Format</th>
-                <th className="px-4 py-2">Account</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Date</th>
               </tr>
@@ -46,7 +45,6 @@ export default function HistoryTab() {
                       {h.format}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-slate-400 text-xs">{h.account_email || '—'}</td>
                   <td className="px-4 py-2">
                     {h.status === 'success' ? (
                       <span className="text-xs text-green-400">✓ Success</span>

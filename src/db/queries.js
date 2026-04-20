@@ -16,71 +16,40 @@ export function getDb() {
   return db
 }
 
-// ── Accounts ──────────────────────────────────────────────────────────────────
-
-export function getAccounts() {
-  return getDb().prepare('SELECT * FROM accounts ORDER BY created_at').all()
-}
-
-export function getActiveAccount() {
-  return getDb().prepare('SELECT * FROM accounts WHERE is_active = 1 LIMIT 1').get()
-}
-
-export function addAccount({ email, label, credentials }) {
-  const db = getDb()
-  db.prepare('UPDATE accounts SET is_active = 0').run()
-  return db
-    .prepare(
-      'INSERT OR REPLACE INTO accounts (email, label, credentials, is_active) VALUES (?, ?, ?, 1)'
-    )
-    .run(email, label || email, JSON.stringify(credentials))
-}
-
-export function switchAccount(id) {
-  const db = getDb()
-  db.prepare('UPDATE accounts SET is_active = 0').run()
-  db.prepare('UPDATE accounts SET is_active = 1 WHERE id = ?').run(id)
-}
-
-export function removeAccount(id) {
-  const db = getDb()
-  db.prepare('DELETE FROM accounts WHERE id = ?').run(id)
-  const remaining = db.prepare('SELECT id FROM accounts LIMIT 1').get()
-  if (remaining) {
-    db.prepare('UPDATE accounts SET is_active = 1 WHERE id = ?').run(remaining.id)
-  }
-}
-
-export function updateAccountCredentials(id, credentials) {
-  getDb()
-    .prepare('UPDATE accounts SET credentials = ? WHERE id = ?')
-    .run(JSON.stringify(credentials), id)
-}
-
 // ── Activation Keys ───────────────────────────────────────────────────────────
 
 export function getKeys() {
   return getDb()
-    .prepare(
-      `SELECT k.*, a.email as account_email FROM activation_keys k
-       LEFT JOIN accounts a ON k.account_id = a.id
-       ORDER BY k.created_at DESC`
-    )
+    .prepare('SELECT * FROM activation_keys ORDER BY date_added DESC')
     .all()
 }
 
-export function findKey(accountId) {
+export function findKeyByChecksum(checksum) {
   return getDb()
-    .prepare('SELECT * FROM activation_keys WHERE account_id = ? LIMIT 1')
-    .get(accountId)
+    .prepare('SELECT * FROM activation_keys WHERE checksum = ? LIMIT 1')
+    .get(checksum)
 }
 
-export function addKey({ hexKey, label, bookTitle, accountId }) {
+export function addKey({ hexKey, checksum, bookTitle, filePath }) {
+  if (checksum) {
+    return getDb()
+      .prepare(
+        `INSERT INTO activation_keys (checksum, activation_bytes, book_title, file_path)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(checksum) DO UPDATE SET
+           activation_bytes = excluded.activation_bytes,
+           book_title = excluded.book_title,
+           file_path = excluded.file_path`
+      )
+      .run(checksum, hexKey, bookTitle || null, filePath || null)
+  }
+  // Manual entry without checksum — plain insert, no upsert
   return getDb()
     .prepare(
-      'INSERT INTO activation_keys (hex_key, label, book_title, account_id) VALUES (?, ?, ?, ?)'
+      `INSERT INTO activation_keys (activation_bytes, book_title, file_path)
+       VALUES (?, ?, ?)`
     )
-    .run(hexKey, label || bookTitle || 'Manual entry', bookTitle, accountId)
+    .run(hexKey, bookTitle || null, filePath || null)
 }
 
 export function deleteKey(id) {
@@ -91,30 +60,26 @@ export function deleteKey(id) {
 
 export function getHistory() {
   return getDb()
-    .prepare(
-      `SELECT h.*, a.email as account_email FROM history h
-       LEFT JOIN accounts a ON h.account_id = a.id
-       ORDER BY h.created_at DESC LIMIT 500`
-    )
+    .prepare('SELECT * FROM history ORDER BY created_at DESC LIMIT 500')
     .all()
 }
 
-export function addHistory({ inputPath, outputPath, filename, format, quality, accountId }) {
+export function addHistory({ inputPath, outputPath, filename, format, quality }) {
   return getDb()
     .prepare(
-      `INSERT INTO history (input_path, output_path, filename, format, quality, account_id, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'success')`
+      `INSERT INTO history (input_path, output_path, filename, format, quality, status)
+       VALUES (?, ?, ?, ?, ?, 'success')`
     )
-    .run(inputPath, outputPath, filename, format, quality, accountId)
+    .run(inputPath, outputPath, filename, format, quality)
 }
 
-export function addHistoryError({ inputPath, filename, format, accountId, error }) {
+export function addHistoryError({ inputPath, filename, format, error }) {
   return getDb()
     .prepare(
-      `INSERT INTO history (input_path, filename, format, account_id, status, error)
-       VALUES (?, ?, ?, ?, 'error', ?)`
+      `INSERT INTO history (input_path, filename, format, status, error)
+       VALUES (?, ?, ?, 'error', ?)`
     )
-    .run(inputPath, filename, format, accountId, error)
+    .run(inputPath, filename, format, error)
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
