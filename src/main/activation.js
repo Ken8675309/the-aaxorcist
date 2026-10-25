@@ -104,7 +104,10 @@ export async function getActivationBytes(ffmpegPath, aaxFilePath, onStatus) {
 
   const rcrackPath = getRcrackPath()
   if (!rcrackPath) {
-    throw new Error('rcrack not found in resources/tables/. Reinstall the app.')
+    throw new Error(
+      'The rainbow tables (rcrack) are not installed in resources/tables/, so the key cannot be looked up automatically. ' +
+      'Enter your activation bytes manually below.'
+    )
   }
 
   onStatus?.({ step: 'activation', state: 'active' })

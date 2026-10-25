@@ -179,7 +179,7 @@ export function setupIpc(ipcMain, getWindow) {
       || db.getSetting('defaultTranscriptFolder')
       || path.join(path.dirname(inputPath), 'transcripts')
 
-    return runTranscription({
+    const result = await runTranscription({
       ...engineOpts(),
       scriptPath: getTranscribeScript(),
       ffmpegPath: ffPath,
@@ -188,6 +188,21 @@ export function setupIpc(ipcMain, getWindow) {
       onStep: (s) => win?.webContents.send('transcribe:step', s),
       onProgress: (p) => win?.webContents.send('transcribe:progress', p)
     })
+
+    // Hand-entered bytes just decoded a whole book, so they are right: remember
+    // them against this file's checksum so they never need entering again.
+    if (manualActivationBytes && activationBytes) {
+      try {
+        const checksum = await extractAaxChecksum(ffPath, inputPath)
+        db.addKey({
+          hexKey: activationBytes, checksum,
+          bookTitle: path.basename(inputPath, '.aax'), filePath: inputPath
+        })
+      } catch {
+        // storing the key is a convenience; the transcript is already done
+      }
+    }
+    return result
   })
 
   ipcMain.handle('shell:open-file', (_, filePath) => shell.openPath(filePath))
