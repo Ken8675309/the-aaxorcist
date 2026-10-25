@@ -10,8 +10,9 @@ const QUALITIES = [
 
 const STEP_LABELS = {
   checksum: { active: 'Extracting checksum…', done: 'Checksum extracted' },
+  tables: { active: 'Fetching the key tables (first time only)…', done: 'Key tables ready' },
   activation: {
-    active: 'Looking up activation bytes…',
+    active: 'Looking up activation bytes (this can take a few minutes)…',
     done: (fromCache) => fromCache ? 'Activation bytes found (cached)' : 'Activation bytes found'
   },
   converting: { active: 'Purging…' }

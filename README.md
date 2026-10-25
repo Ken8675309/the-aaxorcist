@@ -22,9 +22,9 @@ Convert Audible `.aax` audiobooks to open formats — M4B, MP3, FLAC, OGG, WAV, 
   - macOS: `brew install ffmpeg`
   - Windows: Download from https://ffmpeg.org/download.html
 
-### For activation-byte extraction
-- **Python 3** in your PATH
-- **audible-activator** — the app will auto-clone it to its userData folder on first use, or you can set the path in Settings
+### For activation bytes (opening .aax files)
+- **git** in your PATH. The first time you use an `.aax` file, the app downloads the public [inAudible-NG/tables](https://github.com/inAudible-NG/tables) key tables (about 56 MB) into its data folder and uses them to recover your activation bytes automatically. This happens once, the key is then stored, and the same key works for every book on your Audible account. If you cannot use git, you can still enter the 8-character bytes by hand.
+- The tables are for recovering the keys of audiobooks you own, for non-commercial use (see their licence note).
 
 ### For transcription (optional)
 - **Python 3.9+** in your PATH (`sudo dnf install python3` / `sudo apt install python3 python3-venv`)
@@ -78,7 +78,7 @@ Open the **Séance** tab, pick an `.aax` (or any audio or `.m4b`) file, and pres
 4. **Output:** Markdown (readable, with a heading per chapter), timestamped text, SRT subtitles and JSON. Files go to `transcripts/` beside the input file unless you choose a folder.
 5. **GPU:** an NVIDIA GPU is used automatically when CUDA is available; otherwise it runs on the CPU (int8). CPU speed varies a lot, so try the *small* model first on a slow machine.
 
-`.aax` files use the same activation bytes as conversion (stored keys, rainbow tables, or entered by hand).
+`.aax` files use the same activation bytes as conversion: stored keys first, then the automatic table lookup (the first lookup downloads the tables and can take a few minutes), then manual entry.
 
 Run the formatter tests with `npm test`.
 
