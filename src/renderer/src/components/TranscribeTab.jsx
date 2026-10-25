@@ -68,7 +68,7 @@ export default function TranscribeTab({ selectedFile }) {
   const [logLine, setLogLine] = useState('')
   const [setupError, setSetupError] = useState('')
 
-  const [model, setModel] = useState('large-v3')
+  const [model, setModel] = useState('large-v3-turbo')
   const [language, setLanguage] = useState('en')
   const [compute, setCompute] = useState('auto')
   const [glossary, setGlossary] = useState('')

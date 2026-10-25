@@ -133,7 +133,7 @@ export function setupIpc(ipcMain, getWindow) {
     return setupEngine({
       ...engineOpts(),
       scriptPath: getTranscribeScript(),
-      model: opts.model || 'large-v3',
+      model: opts.model || 'large-v3-turbo',
       onPhase: (p) => win?.webContents.send('whisper:phase', p),
       onLog: (line) => win?.webContents.send('whisper:log', line)
     })

@@ -21,11 +21,13 @@ const EVT_PREFIX = '@@EVT '
 const MIN_PYTHON = [3, 9]
 const TEMP_MAX_AGE_MS = 12 * 3600 * 1000
 
+// owner and repo match the Hugging Face cache folder name (models--owner--repo).
 export const MODELS = [
-  { id: 'large-v3', label: 'large-v3 (most accurate)', size: '3 GB', repo: 'faster-whisper-large-v3' },
-  { id: 'distil-large-v3', label: 'distil-large-v3 (faster, English only)', size: '1.5 GB', repo: 'faster-distil-whisper-large-v3' },
-  { id: 'medium', label: 'medium', size: '1.5 GB', repo: 'faster-whisper-medium' },
-  { id: 'small', label: 'small (fastest, least accurate)', size: '0.5 GB', repo: 'faster-whisper-small' }
+  { id: 'large-v3-turbo', label: 'large-v3-turbo (fast, near large-v3 accuracy, recommended)', size: '1.6 GB', owner: 'mobiuslabsgmbh', repo: 'faster-whisper-large-v3-turbo' },
+  { id: 'large-v3', label: 'large-v3 (most accurate, slowest)', size: '3 GB', owner: 'Systran', repo: 'faster-whisper-large-v3' },
+  { id: 'distil-large-v3', label: 'distil-large-v3 (fast, English only)', size: '1.5 GB', owner: 'Systran', repo: 'faster-distil-whisper-large-v3' },
+  { id: 'medium', label: 'medium', size: '1.5 GB', owner: 'Systran', repo: 'faster-whisper-medium' },
+  { id: 'small', label: 'small (fastest, least accurate)', size: '0.5 GB', owner: 'Systran', repo: 'faster-whisper-small' }
 ]
 
 // ── paths ────────────────────────────────────────────────────────────────────
@@ -47,8 +49,9 @@ export function enginePaths(userDataDir) {
 
 export function isModelInstalled(modelsDir, id) {
   const known = MODELS.find((m) => m.id === id)
+  const owner = known ? known.owner : 'Systran'
   const repo = known ? known.repo : `faster-whisper-${id}`
-  const snaps = path.join(modelsDir, `models--Systran--${repo}`, 'snapshots')
+  const snaps = path.join(modelsDir, `models--${owner}--${repo}`, 'snapshots')
   try {
     return readdirSync(snaps).some((d) => existsSync(path.join(snaps, d, 'model.bin')))
   } catch {

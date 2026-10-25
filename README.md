@@ -72,11 +72,11 @@ Output is placed in the `dist/` folder.
 
 Open the **Séance** tab, pick an `.aax` (or any audio or `.m4b`) file, and press **Transcribe**.
 
-1. **First run:** click *Install engine* in *The Medium*. It sets up a private Python environment and downloads the model (large-v3 is about 3 GB; small is about 0.5 GB). This happens once.
-2. **Accuracy:** large-v3 is the most accurate. Add unusual names or jargon to *Names and terms* to help Whisper spell them. Voice activity detection skips silence and music.
+1. **First run:** click *Install engine* in *The Medium*. It sets up a private Python environment and downloads the model (large-v3-turbo is about 1.6 GB, large-v3 about 3 GB, small about 0.5 GB). This happens once.
+2. **Accuracy:** large-v3-turbo is the default: several times faster than large-v3 with accuracy close to it. large-v3 is the most accurate but slowest. Add unusual names or jargon to *Names and terms* to help Whisper spell them. Voice activity detection skips silence and music.
 3. **Long books:** the book is split at chapter boundaries (and at quiet moments inside very long chapters), and progress is checkpointed. If you cancel or the app closes, running the same book with the same settings resumes where it stopped.
 4. **Output:** Markdown (readable, with a heading per chapter), timestamped text, SRT subtitles and JSON. Files go to `transcripts/` beside the input file unless you choose a folder.
-5. **GPU:** an NVIDIA GPU is used automatically when CUDA is available; otherwise it runs on the CPU (int8). CPU speed varies a lot, so try the *small* or *distil-large-v3* model first on a slow machine.
+5. **GPU:** an NVIDIA GPU is used automatically when CUDA is available; otherwise it runs on the CPU (int8). CPU speed varies a lot, so try the *small* model first on a slow machine.
 
 `.aax` files use the same activation bytes as conversion (stored keys, rainbow tables, or entered by hand).
 
