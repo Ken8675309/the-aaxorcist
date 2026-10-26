@@ -206,7 +206,19 @@ export function setupIpc(ipcMain, getWindow) {
   })
 
   ipcMain.handle('shell:open-file', (_, filePath) => shell.openPath(filePath))
-  ipcMain.handle('shell:open-folder', (_, filePath) => shell.showItemInFolder(filePath))
+  // showItemInFolder can block the whole window on some Linux desktops while it
+  // waits for the file manager, so open the containing folder asynchronously.
+  ipcMain.handle('shell:open-folder', async (_, filePath) => {
+    if (process.platform === 'linux') {
+      try {
+        const err = await shell.openPath(path.dirname(filePath))
+        if (!err) return
+      } catch {
+        // fall through to the default behaviour
+      }
+    }
+    shell.showItemInFolder(filePath)
+  })
 
   // ── Activation ────────────────────────────────────────────────────────────
 
