@@ -128,6 +128,51 @@ export function convert({ ffmpegPath, inputPath, outputPath, format, quality, ac
   })
 }
 
+// Decode any input (including .aax when activationBytes is given) to raw 16 kHz
+// mono signed 16-bit PCM, which is what Whisper wants. Raw PCM has no container
+// size limit (WAV breaks past 4 GB). onSpawn receives the child process so the
+// caller can cancel it.
+export function decodeToPcm({ ffmpegPath, inputPath, outputPath, activationBytes, onProgress, onSpawn }) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      '-y', '-nostdin',
+      ...(activationBytes ? ['-activation_bytes', activationBytes] : []),
+      '-i', inputPath,
+      '-vn', '-map', '0:a:0',
+      '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', '-f', 's16le',
+      outputPath
+    ]
+
+    const proc = spawn(ffmpegPath, args)
+    onSpawn?.(proc)
+    let totalDuration = 0
+    let stderr = ''
+
+    proc.stderr.on('data', (chunk) => {
+      const text = chunk.toString()
+      stderr = (stderr + text).slice(-4000)
+      const durMatch = text.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/)
+      if (durMatch && !totalDuration) {
+        totalDuration =
+          parseInt(durMatch[1]) * 3600 + parseInt(durMatch[2]) * 60 + parseInt(durMatch[3])
+      }
+      const timeMatch = text.match(/time=(\d+):(\d+):(\d+)\.(\d+)/)
+      if (timeMatch && totalDuration) {
+        const t =
+          parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60 + parseInt(timeMatch[3])
+        onProgress?.({ pct: Math.min(100, Math.round((t / totalDuration) * 100)) })
+      }
+    })
+
+    proc.on('close', (code, signal) => {
+      if (code === 0) resolve(outputPath)
+      else if (signal) reject(new Error('Cancelled'))
+      else reject(new Error(`ffmpeg exited ${code}: ${stderr.slice(-500)}`))
+    })
+    proc.on('error', reject)
+  })
+}
+
 export function installFfmpegLinux() {
   return new Promise((resolve, reject) => {
     let cmd

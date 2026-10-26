@@ -23,6 +23,16 @@ contextBridge.exposeInMainWorld('api', {
   onConvertProgress: (cb) => on('convert:progress', cb),
   onConvertStep: (cb) => on('convert:step', cb),
 
+  // Transcription
+  whisperStatus: () => invoke('whisper:status'),
+  whisperSetup: (opts) => invoke('whisper:setup', opts),
+  onWhisperPhase: (cb) => on('whisper:phase', cb),
+  onWhisperLog: (cb) => on('whisper:log', cb),
+  transcribeStart: (opts) => invoke('transcribe:start', opts),
+  transcribeCancel: () => invoke('transcribe:cancel'),
+  onTranscribeStep: (cb) => on('transcribe:step', cb),
+  onTranscribeProgress: (cb) => on('transcribe:progress', cb),
+
   // Activation
   activationChecksum: (filePath) => invoke('activation:checksum', filePath),
   activationStatus: () => invoke('activation:status'),
@@ -35,6 +45,7 @@ contextBridge.exposeInMainWorld('api', {
   filesTree: (dir) => invoke('files:tree', dir),
   filesPickFolder: () => invoke('files:pick-folder'),
   filesPickFile: () => invoke('files:pick-file'),
+  filesPickAudio: () => invoke('files:pick-audio'),
   filesPickOutput: () => invoke('files:pick-output'),
 
   // Keys

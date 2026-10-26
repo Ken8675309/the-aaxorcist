@@ -1,8 +1,18 @@
 import { spawn } from 'child_process'
-import { existsSync } from 'fs'
+import { existsSync, mkdirSync, renameSync, rmSync, chmodSync, readFileSync } from 'fs'
+import { createHash } from 'crypto'
 import path from 'path'
 import { app } from 'electron'
 import * as db from '../db/queries.js'
+
+// Public RainbowCrack plugin and tables (about 56 MB) used to recover your own
+// Audible activation bytes offline. Non-commercial use; see its README.
+export const TABLES_REPO = 'https://github.com/inAudible-NG/tables.git'
+// The app downloads and runs a program from that repo, so it only accepts this
+// exact commit, and checks the program's hash too. If the repo ever changes, the
+// download is refused and the manual-entry box is offered instead.
+export const TABLES_COMMIT = 'e30f81194b3b38056d9e299b7484b0b2201e92d9'
+export const RCRACK_SHA256 = '73f6e9886b8df3e6d1a3761fc330cb125c2b6f42e67f563d6721b4f352b0e35d'
 
 function getResourcesPath() {
   return app.isPackaged
@@ -10,14 +20,94 @@ function getResourcesPath() {
     : path.join(app.getAppPath(), 'resources')
 }
 
-export function getTablesDir() {
+// Two places the tables can live: a copy shipped inside the app (resources/tables,
+// for builds that bundle them) or one the app fetched itself into its data folder.
+// A packaged app's own folder is read-only, so the fetched copy goes in userData.
+function bundledTablesDir() {
   return path.join(getResourcesPath(), 'tables')
 }
 
+function fetchedTablesDir() {
+  return path.join(app.getPath('userData'), 'tables')
+}
+
+export function getTablesDir() {
+  const bundled = bundledTablesDir()
+  if (existsSync(path.join(bundled, 'rcrack'))) return bundled
+  return fetchedTablesDir()
+}
+
 export function getRcrackPath() {
-  const bundled = path.join(getTablesDir(), 'rcrack')
-  if (existsSync(bundled)) return bundled
-  return null
+  const candidate = path.join(getTablesDir(), 'rcrack')
+  return existsSync(candidate) ? candidate : null
+}
+
+let fetching = null
+
+function runGit(args, cwd) {
+  return new Promise((resolve, reject) => {
+    let err = ''
+    const proc = spawn('git', args, {
+      cwd,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_LFS_SKIP_SMUDGE: '1' },
+      stdio: ['ignore', 'ignore', 'pipe']
+    })
+    proc.stderr.on('data', (d) => { err = (err + d).slice(-800) })
+    proc.on('error', (e) => reject(new Error(
+      e.code === 'ENOENT'
+        ? 'git is needed once to fetch the key tables, and it is not installed. Install git, or enter your activation bytes manually below.'
+        : `Could not run git: ${e.message}`
+    )))
+    proc.on('close', (code) => code === 0 ? resolve() : reject(new Error(
+      `Could not download the key tables (git exited ${code}). Check your internet connection, or enter your activation bytes manually below. ${err.trim()}`
+    )))
+  })
+}
+
+// The bundled rcrack is a Linux x86-64 program, so the automatic lookup only
+// applies there. Other systems use manual entry.
+export function tablesSupported() {
+  return process.platform === 'linux' && process.arch === 'x64'
+}
+
+// Makes sure rcrack and the tables are present, fetching them once if not.
+// Needs git on the PATH. Safe to call concurrently and to call repeatedly.
+export function ensureTables(onStatus) {
+  if (getRcrackPath()) return Promise.resolve(getRcrackPath())
+  if (!tablesSupported()) {
+    return Promise.reject(new Error(
+      'The automatic key lookup only runs on 64-bit Linux. Enter your activation bytes manually below.'
+    ))
+  }
+  if (fetching) return fetching
+  fetching = (async () => {
+    onStatus?.({ step: 'tables', state: 'active' })
+    const dest = fetchedTablesDir()
+    const tmp = `${dest}.partial`
+    rmSync(tmp, { recursive: true, force: true })
+    rmSync(dest, { recursive: true, force: true })
+    mkdirSync(tmp, { recursive: true })
+    try {
+      // Fetch exactly the pinned commit rather than whatever the branch holds today.
+      await runGit(['init', '-q'], tmp)
+      await runGit(['fetch', '-q', '--depth', '1', TABLES_REPO, TABLES_COMMIT], tmp)
+      await runGit(['checkout', '-q', '--detach', 'FETCH_HEAD'], tmp)
+      const rcrack = path.join(tmp, 'rcrack')
+      if (!existsSync(rcrack)) throw new Error('The downloaded key tables were missing rcrack. Enter your activation bytes manually below.')
+      const sum = createHash('sha256').update(readFileSync(rcrack)).digest('hex')
+      if (sum !== RCRACK_SHA256) {
+        throw new Error('The downloaded rcrack did not match the expected checksum, so it was not used. Enter your activation bytes manually below.')
+      }
+      try { chmodSync(rcrack, 0o755) } catch { /* best effort */ }
+      renameSync(tmp, dest)
+    } catch (e) {
+      rmSync(tmp, { recursive: true, force: true })
+      throw e
+    }
+    onStatus?.({ step: 'tables', state: 'done' })
+    return getRcrackPath()
+  })().finally(() => { fetching = null })
+  return fetching
 }
 
 function deriveFFprobePath(ffmpegPath) {
@@ -102,9 +192,14 @@ export async function getActivationBytes(ffmpegPath, aaxFilePath, onStatus) {
     return { activationBytes: cached.activation_bytes, checksum, fromCache: true }
   }
 
-  const rcrackPath = getRcrackPath()
+  let rcrackPath = getRcrackPath()
   if (!rcrackPath) {
-    throw new Error('rcrack not found in resources/tables/. Reinstall the app.')
+    try {
+      rcrackPath = await ensureTables(onStatus)
+    } catch (e) {
+      // The UI offers manual entry when the message mentions the rainbow tables.
+      throw new Error(`The rainbow tables are unavailable. ${e.message}`)
+    }
   }
 
   onStatus?.({ step: 'activation', state: 'active' })

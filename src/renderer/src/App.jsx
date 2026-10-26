@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import FileBrowser from './components/FileBrowser'
 import ConvertTab from './components/ConvertTab'
+import TranscribeTab from './components/TranscribeTab'
 import KeysTab from './components/KeysTab'
 import HistoryTab from './components/HistoryTab'
 import SettingsTab from './components/SettingsTab'
@@ -8,6 +9,7 @@ import FfmpegBanner from './components/FfmpegBanner'
 
 const TABS = [
   { id: 'convert', label: 'Exorcise' },
+  { id: 'transcribe', label: 'Séance' },
   { id: 'keys', label: 'Sacred Keys' },
   { id: 'history', label: 'Book of the Dead' },
   { id: 'settings', label: 'Relics' }
@@ -123,6 +125,7 @@ export default function App() {
           <FileBrowser selectedFile={selectedFile} onSelect={setSelectedFile} />
           <main style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 12 }}>
             {tab === 'convert' && <ConvertTab selectedFile={selectedFile} />}
+            {tab === 'transcribe' && <TranscribeTab selectedFile={selectedFile} />}
             {tab === 'keys' && <KeysTab />}
             {tab === 'history' && <HistoryTab />}
             {tab === 'settings' && <SettingsTab />}

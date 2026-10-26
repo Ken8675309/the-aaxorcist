@@ -1,6 +1,6 @@
 {
   "name": "the-aaxorcist",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "The AAXorcist - Audible AAX audiobook converter",
   "main": "out/main/index.js",
@@ -13,7 +13,8 @@
     "package:linux": "npm run build && electron-builder --linux",
     "package:win": "npm run build && electron-builder --win",
     "package:mac": "npm run build && electron-builder --mac",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "test": "node --test test/transcript-format.test.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
@@ -89,6 +90,15 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
-    }
+    },
+    "extraResources": [
+      {
+        "from": "resources/transcribe",
+        "to": "transcribe",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }
