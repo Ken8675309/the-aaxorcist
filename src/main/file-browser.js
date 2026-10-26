@@ -4,17 +4,25 @@ import path from 'path'
 
 // Folders that never hold audiobooks and can be enormous.
 const SKIP_DIRS = new Set(['node_modules', '__pycache__', 'venv', '.venv', 'site-packages', 'snap'])
-const MAX_DIRS = 20000
+const MAX_DIRS = 100000
 
 // Finds .aax files under rootDir. Runs in the background (async) so scanning a big
-// folder never freezes the app, skips hidden and dependency folders, does not
-// follow symlinks, and gives up after MAX_DIRS folders.
-export async function buildFileTree(rootDir, { maxDepth = 6, maxDirs = MAX_DIRS } = {}) {
+// folder never freezes the app, skips hidden and dependency folders below the
+// chosen root, and gives up (with a console warning) after MAX_DIRS folders.
+// Symlinks are not followed.
+export async function buildFileTree(rootDir, { maxDepth = 8, maxDirs = MAX_DIRS } = {}) {
   if (!existsSync(rootDir)) return []
   const budget = { dirs: 0 }
 
   async function walk(dir, depth) {
-    if (depth > maxDepth || budget.dirs >= maxDirs) return []
+    if (depth > maxDepth) return []
+    if (budget.dirs >= maxDirs) {
+      if (!budget.warned) {
+        budget.warned = true
+        console.warn(`[file-browser] stopped scanning after ${maxDirs} folders; choose a more specific folder`)
+      }
+      return []
+    }
     budget.dirs += 1
 
     let entries
