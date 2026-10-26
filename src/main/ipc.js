@@ -235,9 +235,9 @@ export function setupIpc(ipcMain, getWindow) {
 
   // ── File browser ──────────────────────────────────────────────────────────
 
-  ipcMain.handle('files:tree', (_, rootDir) => {
+  ipcMain.handle('files:tree', async (_, rootDir) => {
     if (!rootDir || !existsSync(rootDir)) return []
-    return buildFileTree(rootDir)
+    return await buildFileTree(rootDir)
   })
 
   ipcMain.handle('files:pick-folder', async () => {
